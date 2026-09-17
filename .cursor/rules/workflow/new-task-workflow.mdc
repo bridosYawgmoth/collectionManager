@@ -1,0 +1,54 @@
+---
+description: Start-of-work steps — checks, Jira ticket, branch
+alwaysApply: true
+---
+
+# Start-of-work rules
+
+## Trigger
+
+When the user says something like "let's start a new task", "start working on X", or similar.
+
+## Steps (in order)
+
+### 1. Verify starting point
+
+- Confirm we are on `1-production`:
+  ```bash
+  git rev-parse --abbrev-ref HEAD
+  ```
+- Confirm no other feature branch is checked out or in progress.
+- If either check fails, stop and inform the user before continuing.
+
+### 2. Clarify the task
+
+- If the user has not described the task, **ask for details** before doing anything else.
+- The description is needed to write a good Jira summary and branch name.
+
+### 3. Create Jira ticket → In Progress
+
+- **Site:** `https://bridos1234.atlassian.net`
+- **Cloud ID:** `ec17db81-1534-4577-963c-aee1e9d0bcc2`
+- **Project:** `KAN` (shared board, "AI-playground")
+- **Issue type:** Task (unless the user specifies Bug/Story)
+- **Assignee:** `5c6033acb5e76e7e3c9275c4`
+- **Label:** `collection-manager` — required, so the shared board stays filterable
+
+Use Atlassian MCP:
+
+1. `createJiraIssue` — clear `summary`, short `description`, the assignee above, and the label
+2. `transitionJiraIssue` — transition id `21` (In Progress)
+
+Transition ids on this board: `11` To Do, `21` In Progress, `31` In Review, `41` Done, `2` Obsolete. If a transition is rejected, re-check with `getTransitionsForJiraIssue` rather than guessing.
+
+### 4. Create branch and switch to it
+
+Branch naming: `KAN-{n}-{short-description}` (lowercase, hyphen-separated, 2-4 words). See `branch-naming.mdc`.
+
+```bash
+git checkout -b KAN-{n}-{short-description}
+```
+
+## After setup
+
+Tell the user the Jira key and branch name, then wait for further instructions.

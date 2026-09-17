@@ -1,0 +1,40 @@
+---
+description: Test-driven development workflow and test naming
+alwaysApply: true
+---
+
+# TDD
+
+## Red, green, refactor
+
+1. Write the failing test first.
+2. Write the minimum implementation that passes it.
+3. Refactor with the test green.
+
+The failing test and the implementation that satisfies it belong in the **same commit**. One behavior per commit.
+
+## Name tests for behavior, not methods
+
+```ts
+// BAD
+it("tests match()")
+
+// GOOD
+it("resolves a phonetically mangled name to the correct card")
+it("returns no candidates when the transcript is empty")
+it("prefers a printing from the active sorting context")
+```
+
+## Coverage that matters
+
+Cover the failure paths explicitly, not just the happy one — a missing file, a 4xx, a 5xx, an empty response, an ambiguous match. These are where this project actually breaks.
+
+## Where tests go
+
+- **domain** — plain unit tests, no mocks needed, since domain has no I/O.
+- **application** — use cases against in-memory fake ports, not mocking libraries.
+- **infrastructure** — integration tests against real Postgres; third-party HTTP stubbed at the boundary.
+
+## The resolver is special
+
+`resolution` carries a fixture suite of deliberately mangled transcripts and a **committed accuracy baseline**. Any change that lowers the baseline fails, and the number is reported rather than hidden. See the `resolver-eval` skill.

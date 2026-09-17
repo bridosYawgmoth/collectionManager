@@ -1,0 +1,29 @@
+# Git hooks. Activate with `lefthook install` once the toolchain is present.
+#
+# Requires gitleaks >= 8.20 — the `git --pre-commit --staged` path was broken
+# in 8.19 for repos without a full blob/tree history (gitleaks#1532).
+
+pre-commit:
+  parallel: true
+  commands:
+    gitleaks:
+      run: gitleaks git --pre-commit --staged --redact --verbose .
+      fail_text: "Possible secret in staged changes. Do not bypass without reading the finding."
+
+    # Enabled during the workspace scaffold, once pnpm and eslint exist.
+    # typecheck:
+    #   glob: "*.{ts,tsx}"
+    #   run: pnpm -w exec tsc --noEmit
+    # lint:
+    #   glob: "*.{ts,tsx}"
+    #   run: pnpm -w exec eslint {staged_files}
+
+pre-push:
+  commands:
+    gitleaks-history:
+      run: gitleaks git --redact --verbose .
+      fail_text: "Possible secret in commit history. This repo is public — stop and rotate."
+
+    # Enabled during the workspace scaffold.
+    # test:
+    #   run: pnpm -w test

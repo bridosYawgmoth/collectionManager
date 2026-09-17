@@ -1,0 +1,28 @@
+---
+description: Git commit messages must use feat: or fix: prefix
+alwaysApply: true
+---
+
+# Commit message prefix
+
+All git commit messages in this project must start with one of:
+
+- `feat:` — new work, setup, enhancements (default)
+- `fix:` — bug fixes only
+
+## When committing
+
+1. **Default to `feat:`** unless the user explicitly says it is a fix.
+2. If the user gives a message without a prefix (e.g. "add resolver cascade"), prepend `feat:` → `feat: add resolver cascade`.
+3. If the user already includes the prefix, use it as given.
+4. If the user says it is a fix, use `fix:` instead of `feat:`.
+
+## Examples
+
+- User: "add health endpoint" → `feat: add health endpoint`
+- User: "feat: scryfall bulk ingest" → `feat: scryfall bulk ingest`
+- User: "fix the phonetic index" / "this is a fix: phonetic index" → `fix: phonetic index`
+
+## Scope
+
+One behavior per commit. A failing test and the implementation that makes it pass belong in the same commit; unrelated refactors do not.

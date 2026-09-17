@@ -1,0 +1,28 @@
+---
+description: End-of-work steps — PR, review, merge, cleanup
+alwaysApply: true
+---
+
+# End-of-work rules
+
+## When the user says "open a PR" or "perform the end of workflow steps"
+
+1. Run the secrets check in `secrets-and-push-safety.mdc` first — this repo is public
+2. Push the current branch to origin
+3. Open a PR targeting `1-production`
+4. Move the respective Jira issue → **In Review** (`transitionJiraIssue`, transition id `31`)
+5. Stop and wait for the user to review
+
+## When the user says "merged"
+
+1. Move the Jira issue → **Done** (`transitionJiraIssue`, transition id `41`)
+2. Switch to `1-production` and pull:
+   ```bash
+   git checkout 1-production
+   git pull origin 1-production
+   ```
+3. Stop. **Do not start a new task.**
+
+## Golden rule
+
+Never start a new task, create a ticket, or create a branch unless the user explicitly asks for it.

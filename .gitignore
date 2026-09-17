@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+packages/pwa/dev-dist/
+
+# Environment — real values never leave the machine.
+# Note: unlike Symfony, Node reads .env as the live file, so .env is ignored
+# here and .env.example is the committed template.
+.env
+.env.local
+.env.*.local
+
+# Keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Database dumps and backups — these contain the card collection
+*.sql
+!packages/server/migrations/**/*.sql
+*.dump
+*.sqlite
+*.sqlite3
+backups/
+
+# Scryfall bulk data — large and regenerable via the scryfall-refresh skill
+data/scryfall/
+
+# Voice recordings — audio of the user speaking. Committed fixtures must be
+# added deliberately and explicitly un-ignored.
+data/audio/
+packages/server/src/voice/__fixtures__/audio/*
+!packages/server/src/voice/__fixtures__/audio/.gitkeep
+
+# Test and tooling output
+coverage/
+.vitest/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS and editor
+.DS_Store
+.idea/
+*.swp
+*~

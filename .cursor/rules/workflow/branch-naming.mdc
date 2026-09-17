@@ -1,0 +1,40 @@
+---
+description: Git branch naming convention for this project
+alwaysApply: true
+---
+
+# Branch naming
+
+All branches must follow the pattern:
+
+```
+KAN-{ticket-number}-{short-description}
+```
+
+## Rules
+
+1. Always prefix with the Jira ticket key (`KAN-{number}`)
+2. Short description: lowercase, hyphen-separated, 2-4 words
+3. No spaces, no uppercase, no special characters
+
+## Examples
+
+- `KAN-18-project-rules`
+- `KAN-19-scryfall-ingest`
+- `KAN-20-resolver-cascade`
+
+## When creating a branch
+
+Follow the full **new task workflow** in `new-task-workflow.mdc` (verify trunk → Jira ticket → branch).
+
+Branch pattern only:
+
+```bash
+git checkout -b KAN-{n}-{description}
+```
+
+Always create the branch from an up-to-date `1-production`.
+
+## Note on the shared board
+
+The `KAN` project is shared with prizeWallAnalyzer, so ticket numbers are sequential across both. That keeps every key globally unique — `KAN-19` means one thing only. Tickets for this project carry the `collection-manager` label.

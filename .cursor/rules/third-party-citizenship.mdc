@@ -1,0 +1,29 @@
+---
+description: Rate limits and etiquette for Scryfall and Archidekt
+globs: packages/server/src/catalog/**,packages/server/src/sync/**
+alwaysApply: false
+---
+
+# Third-party citizenship
+
+Both services are free and tolerate us by choice. Abuse gets the ecosystem locked down — Moxfield already did exactly that.
+
+## Scryfall
+
+- **Prefer bulk data over the API.** Per-card API calls in a loop are precisely what their docs ask you not to do.
+- Ceiling of roughly 10 requests/second, with 50-100ms between calls.
+- Always send a descriptive `User-Agent` and an explicit `Accept` header.
+- API calls are a **fallback for local index misses only**, never the primary resolution path.
+- Cache card images rather than re-fetching them on every render.
+
+## Archidekt
+
+- No official API. Reads are tolerated; writes are reverse-engineered and may break without notice.
+- Rate-limit to roughly 1 request/second.
+- Send an identifying `User-Agent`.
+- **Prefer the CSV export path.** The `/api/collection/upsert/v2/{user_id}/` endpoint is a convenience that must be allowed to fail without risking local data.
+- Treat every response as untrusted. Parse defensively, never assume a shape.
+
+## Failure posture
+
+A third-party failure must never corrupt or block local state. Record sync failures in `sync_runs` and retry them; never let a remote error discard input the user already gave us.

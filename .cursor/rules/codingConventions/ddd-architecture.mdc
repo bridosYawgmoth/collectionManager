@@ -1,0 +1,47 @@
+---
+description: DDD bounded contexts, layering, and the dependency rule
+alwaysApply: true
+---
+
+# DDD architecture
+
+## Bounded contexts
+
+- **catalog** — the Scryfall mirror. `Card`, `Printing`; `ScryfallId`, `OracleId`, `SetCode`, `CollectorNumber`.
+- **resolution** — spoken string to ranked candidates. A **pure domain service**: no I/O, catalog behind a port.
+- **collection** — the core domain. `Collection` aggregate over `CollectionEntry`; `Quantity`, `Finish`, `Condition`, `Language`; domain events.
+- **voice** — `VoiceSession` over `Utterance`. Holds pending/unconfirmed state.
+- **sync** — distribution. `CollectionTargetPort` plus one anti-corruption adapter per platform.
+
+## Layering is uneven on purpose
+
+| Context | Layers |
+|---|---|
+| resolution, collection | `domain` / `application` / `infrastructure` |
+| catalog, voice, sync | `domain` / `infrastructure` |
+
+Do **not** add an `application` layer to catalog, voice, or sync speculatively. Promote one when a real use case needs orchestrating, and say what it buys per `feedback-and-justification.mdc`.
+
+## The dependency rule
+
+`domain` depends on nothing. `application` depends only on `domain`. `infrastructure` implements ports declared in `domain`.
+
+- Ports (interfaces) live in `domain/`, adapters in `infrastructure/`.
+- Never `new` an infrastructure class inside `domain/` or `application/`. Constructor-inject the port.
+- No Zod, HTTP, SQL, or vendor SDK imports anywhere under `domain/`.
+
+## Value objects over primitives
+
+A Scryfall ID is not a `string`. Wrap identifiers and quantities so they cannot be swapped by accident.
+
+```ts
+// BAD — these are trivially transposable
+function addCard(scryfallId: string, setCode: string, quantity: number)
+
+// GOOD
+function addCard(options: { scryfallId: ScryfallId; setCode: SetCode; quantity: Quantity })
+```
+
+## Domain events over in-place mutation
+
+State changes on `Collection` emit events (`CardAdded`, `CardRemoved`, `QuantityChanged`, `EntryCorrected`) appended to the log. Corrections are compensating events, never updates.
