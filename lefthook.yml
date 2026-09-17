@@ -2,13 +2,18 @@
 #
 # Requires gitleaks >= 8.20 — the `git --pre-commit --staged` path was broken
 # in 8.19 for repos without a full blob/tree history (gitleaks#1532).
+#
+# Both stages go through scripts/gitleaks-scan.sh, which separates "secret
+# found" (exit 1) from "scanner could not run" (exit 2). Both still block, but
+# only one of them means rotate a credential. fail_text below stays neutral
+# because lefthook prints it for either case.
 
 pre-commit:
   parallel: true
   commands:
     gitleaks:
-      run: gitleaks git --pre-commit --staged --redact --verbose .
-      fail_text: "Possible secret in staged changes. Do not bypass without reading the finding."
+      run: scripts/gitleaks-scan.sh staged
+      fail_text: "Staged-change secret scan did not pass. Read the message above before bypassing."
 
     # Enabled during the workspace scaffold, once pnpm and eslint exist.
     # typecheck:
@@ -21,8 +26,8 @@ pre-commit:
 pre-push:
   commands:
     gitleaks-history:
-      run: gitleaks git --redact --verbose .
-      fail_text: "Possible secret in commit history. This repo is public — stop and rotate."
+      run: scripts/gitleaks-scan.sh history
+      fail_text: "History secret scan did not pass. Read the message above before bypassing."
 
     # Enabled during the workspace scaffold.
     # test:
