@@ -15,13 +15,12 @@ pre-commit:
       run: scripts/gitleaks-scan.sh staged
       fail_text: "Staged-change secret scan did not pass. Read the message above before bypassing."
 
-    # Enabled during the workspace scaffold, once pnpm and eslint exist.
-    # typecheck:
-    #   glob: "*.{ts,tsx}"
-    #   run: pnpm -w exec tsc --noEmit
-    # lint:
-    #   glob: "*.{ts,tsx}"
-    #   run: pnpm -w exec eslint {staged_files}
+    typecheck:
+      glob: "*.{ts,tsx}"
+      run: pnpm typecheck
+    lint:
+      glob: "*.{ts,tsx}"
+      run: pnpm exec eslint {staged_files}
 
 pre-push:
   commands:
@@ -29,6 +28,5 @@ pre-push:
       run: scripts/gitleaks-scan.sh history
       fail_text: "History secret scan did not pass. Read the message above before bypassing."
 
-    # Enabled during the workspace scaffold.
-    # test:
-    #   run: pnpm -w test
+    test:
+      run: pnpm test
