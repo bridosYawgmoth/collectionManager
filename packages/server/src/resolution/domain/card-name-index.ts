@@ -4,4 +4,5 @@ import type { CatalogName } from "./catalog-name.js";
 // it the mangled-transcript fixture suite cannot run as a pure unit test.
 export interface CardNameIndex {
   findExact(normalized: string): CatalogName | undefined;
+  findAlias(normalized: string): CatalogName | undefined;
 }

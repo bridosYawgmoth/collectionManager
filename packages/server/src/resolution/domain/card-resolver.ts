@@ -23,6 +23,15 @@ export class CardResolver {
       };
     }
 
+    const alias = this.index.findAlias(normalized);
+    if (alias !== undefined) {
+      return {
+        status: "matched",
+        winner: { card: alias, score: 1, stage: "alias" },
+        alternatives: [],
+      };
+    }
+
     return { status: "unresolved", candidates: [] };
   }
 }
