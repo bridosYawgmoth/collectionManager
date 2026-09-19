@@ -1,0 +1,9 @@
+{
+  "name": "@collection-manager/pwa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  }
+}

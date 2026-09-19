@@ -1,0 +1,9 @@
+{
+  "name": "@collection-manager/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  }
+}

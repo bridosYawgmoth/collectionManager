@@ -1,0 +1,7 @@
+packages:
+  - "packages/*"
+
+# esbuild: vitest (and later tsx) need its postinstall binary. Without this
+# allow, pnpm 12 ignores the build and tests cannot run.
+allowBuilds:
+  esbuild: true
