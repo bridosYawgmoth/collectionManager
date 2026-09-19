@@ -16,5 +16,6 @@ export function createSql(
   return postgres(databaseUrl, {
     max: 4,
     connect_timeout: options.connectTimeoutSeconds ?? 5,
+    onnotice: () => undefined,
   });
 }

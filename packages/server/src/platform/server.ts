@@ -1,9 +1,11 @@
 import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createSql } from "./db.js";
+import { applyMigrations } from "./migrate.js";
 
 const config = loadConfig();
 const sql = createSql(config.databaseUrl);
+await applyMigrations(sql);
 const app = buildApp({ sql, logger: true });
 
 try {
