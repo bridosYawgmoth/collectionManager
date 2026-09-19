@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "pnpm --filter @collection-manager/server dev",
     "test": "pnpm -r --if-present test",
+    "test:resolver-eval": "pnpm --filter @collection-manager/server test:resolver-eval",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
