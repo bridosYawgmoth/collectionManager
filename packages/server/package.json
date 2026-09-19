@@ -6,11 +6,13 @@
     "dev": "tsx src/platform/server.ts",
     "start": "tsx src/platform/server.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "scryfall:refresh": "tsx src/catalog/infrastructure/refresh-cli.ts"
   },
   "dependencies": {
     "fastify": "^5.12.5",
-    "postgres": "^3.4.9"
+    "postgres": "^3.4.9",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "tsx": "^4.23.13"

@@ -1,3 +1,3 @@
 # Catalog
 
-Scryfall mirror: `Card`, `Printing`, and identifier value objects. Only `domain` and `infrastructure` — an application layer would be a pass-through until ingest has a real use case to orchestrate.
+Scryfall mirror: `Card`, `Printing`, and identifier value objects. Only `domain` and `infrastructure` — refresh is an ETL pipeline, so it lives in infrastructure rather than a pass-through application layer.

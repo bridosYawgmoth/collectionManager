@@ -1,6 +1,6 @@
 ---
 name: scryfall-refresh
-description: Re-ingests Scryfall bulk data, rebuilds the phonetic and trigram indexes, and reports new sets and card count deltas. Use when card data is stale, a new set has released, a card fails to resolve because it is too new, or the user asks to update the catalog.
+description: Re-ingests Scryfall bulk data, rebuilds the trigram index, and reports new sets and card count deltas. Use when card data is stale, a new set has released, a card fails to resolve because it is too new, or the user asks to update the catalog.
 disable-model-invocation: true
 ---
 
@@ -9,10 +9,12 @@ disable-model-invocation: true
 ## Run
 
 ```bash
-pnpm --filter server scryfall:refresh
+pnpm scryfall:refresh
 ```
 
-Downloads the current `oracle_cards` and `default_cards` bulk files, upserts `cards` and `printings`, then rebuilds the Double Metaphone and `pg_trgm` indexes.
+Downloads the current `oracle_cards` and `default_cards` bulk files into gitignored `data/scryfall/`, upserts `cards` and `printings`, then rebuilds the `pg_trgm` GIN index.
+
+Phonetic (Double Metaphone) index rebuild is not part of this command yet — that belongs to the resolution context.
 
 ## What it must respect
 
@@ -21,8 +23,8 @@ Per `third-party-citizenship.mdc`: bulk download only, descriptive `User-Agent`,
 ## Verify afterwards
 
 1. Card and printing counts moved in the expected direction. They should never shrink.
-2. Run the `resolver-eval` skill. An index rebuild can shift accuracy.
-3. Spot-check that a card from the newest set resolves.
+2. Once the resolver exists, run the `resolver-eval` skill. An index rebuild can shift accuracy.
+3. Once the resolver exists, spot-check that a card from the newest set resolves.
 
 ## Reporting
 

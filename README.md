@@ -68,10 +68,11 @@ pnpm dev
 - `pnpm typecheck` — `tsc --noEmit` per package
 - `pnpm lint` — ESLint
 - `pnpm dev` — apply migrations and start Fastify
+- `pnpm scryfall:refresh` — download Scryfall `oracle_cards` + `default_cards` into `data/scryfall/` and upsert the catalog
 
 ## Status
 
-Workspace scaffold is in place: pnpm monorepo (`shared` / `server` / `pwa`), Fastify health endpoint, and the first migration (`pg_trgm`, `fuzzystrmatch`). Catalog ingest and the resolver come next.
+Catalog ingest is in place: Scryfall bulk download, `cards` / `printings` schema, and `pnpm scryfall:refresh`. The resolver cascade comes next.
 
 ## Credits
 

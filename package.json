@@ -11,7 +11,8 @@
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "scryfall:refresh": "pnpm --filter @collection-manager/server scryfall:refresh"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
