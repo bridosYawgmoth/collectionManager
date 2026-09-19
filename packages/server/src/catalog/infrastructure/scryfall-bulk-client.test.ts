@@ -1,8 +1,10 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { gzipSync } from "node:zlib";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  BulkIndexError,
   SCRYFALL_BULK_DATA_URL,
   ScryfallBulkClient,
   ScryfallHttpError,
@@ -171,6 +173,174 @@ describe("ScryfallBulkClient", () => {
         destPath: join(await tempDir(), "oracle_cards.json"),
       }),
     ).rejects.toThrow(/oracle_cards/);
+  });
+
+  it("downloads gzipped JSONL when the index only exposes jsonl_download_uri", async () => {
+    const jsonl = '{"id":"oracle"}\n{"id":"second"}\n';
+    const gzipped = gzipSync(Buffer.from(jsonl));
+    const jsonlUri = "https://data.scryfall.io/oracle-cards/oracle-cards-test.jsonl.gz";
+    const requests: RecordedRequest[] = [];
+    const client = new ScryfallBulkClient({
+      userAgent: USER_AGENT,
+      fetchImpl: (input, init) => {
+        const request = new Request(input, init);
+        requests.push({ url: request.url, headers: headerMap(request.headers) });
+        if (request.url === SCRYFALL_BULK_DATA_URL) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                data: [
+                  {
+                    type: "oracle_cards",
+                    jsonl_download_uri: jsonlUri,
+                    updated_at: "2026-09-19T00:00:00.000Z",
+                  },
+                ],
+              }),
+              { status: 200 },
+            ),
+          );
+        }
+        if (request.url === jsonlUri) {
+          return Promise.resolve(
+            new Response(gzipped, {
+              status: 200,
+              headers: { "Content-Type": "application/gzip" },
+            }),
+          );
+        }
+        return Promise.reject(new Error(`unexpected url ${request.url}`));
+      },
+      sleep: noopSleep,
+    });
+
+    const dest = join(await tempDir(), "oracle_cards.json");
+    await client.downloadBulkType({ type: "oracle_cards", destPath: dest });
+
+    expect(requests.map((request) => request.url)).toEqual([SCRYFALL_BULK_DATA_URL, jsonlUri]);
+    expect(await readFile(dest, "utf8")).toBe(jsonl);
+  });
+
+  it("prefers jsonl_download_uri over download_uri when both are present", async () => {
+    const jsonl = '{"id":"from-jsonl"}\n';
+    const gzipped = gzipSync(Buffer.from(jsonl));
+    const jsonlUri = "https://data.scryfall.io/oracle-cards/oracle-cards-test.jsonl.gz";
+    const requests: RecordedRequest[] = [];
+    const client = new ScryfallBulkClient({
+      userAgent: USER_AGENT,
+      fetchImpl: (input, init) => {
+        const request = new Request(input, init);
+        requests.push({ url: request.url, headers: headerMap(request.headers) });
+        if (request.url === SCRYFALL_BULK_DATA_URL) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                data: [
+                  {
+                    type: "oracle_cards",
+                    download_uri: ORACLE_URI,
+                    jsonl_download_uri: jsonlUri,
+                    updated_at: "2026-09-19T00:00:00.000Z",
+                  },
+                ],
+              }),
+              { status: 200 },
+            ),
+          );
+        }
+        if (request.url === jsonlUri) {
+          return Promise.resolve(new Response(gzipped, { status: 200 }));
+        }
+        return Promise.reject(new Error(`unexpected url ${request.url}`));
+      },
+      sleep: noopSleep,
+    });
+
+    await client.downloadBulkType({
+      type: "oracle_cards",
+      destPath: join(await tempDir(), "oracle_cards.json"),
+    });
+
+    expect(requests.map((request) => request.url)).toEqual([SCRYFALL_BULK_DATA_URL, jsonlUri]);
+    expect(requests.map((request) => request.url)).not.toContain(ORACLE_URI);
+  });
+
+  it("fails when the bulk-data index is not JSON", async () => {
+    const client = new ScryfallBulkClient({
+      userAgent: USER_AGENT,
+      fetchImpl: () => Promise.resolve(new Response("<html>nope</html>", { status: 200 })),
+      sleep: noopSleep,
+    });
+
+    await expect(
+      client.downloadBulkType({
+        type: "oracle_cards",
+        destPath: join(await tempDir(), "oracle_cards.json"),
+      }),
+    ).rejects.toThrow(BulkIndexError);
+  });
+
+  it("fails when the selected bulk item has neither download URI", async () => {
+    const client = new ScryfallBulkClient({
+      userAgent: USER_AGENT,
+      fetchImpl: () =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              data: [{ type: "oracle_cards", updated_at: "2026-09-19T00:00:00.000Z" }],
+            }),
+            { status: 200 },
+          ),
+        ),
+      sleep: noopSleep,
+    });
+
+    await expect(
+      client.downloadBulkType({
+        type: "oracle_cards",
+        destPath: join(await tempDir(), "oracle_cards.json"),
+      }),
+    ).rejects.toThrow(BulkIndexError);
+  });
+
+  it("decompresses an empty gzip payload to an empty dest file", async () => {
+    const jsonlUri = "https://data.scryfall.io/oracle-cards/oracle-cards-empty.jsonl.gz";
+    const client = new ScryfallBulkClient({
+      userAgent: USER_AGENT,
+      fetchImpl: (input) => {
+        const url = requestUrl(input);
+        if (url === SCRYFALL_BULK_DATA_URL) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                data: [
+                  {
+                    type: "oracle_cards",
+                    jsonl_download_uri: jsonlUri,
+                    updated_at: "2026-09-19T00:00:00.000Z",
+                  },
+                ],
+              }),
+              { status: 200 },
+            ),
+          );
+        }
+        if (url === jsonlUri) {
+          return Promise.resolve(
+            new Response(gzipSync(Buffer.from("")), {
+              status: 200,
+              headers: { "Content-Type": "application/gzip" },
+            }),
+          );
+        }
+        return Promise.reject(new Error(`unexpected url ${url}`));
+      },
+      sleep: noopSleep,
+    });
+
+    const dest = join(await tempDir(), "oracle_cards.json");
+    await client.downloadBulkType({ type: "oracle_cards", destPath: dest });
+    expect(await readFile(dest, "utf8")).toBe("");
   });
 
   async function tempDir(): Promise<string> {

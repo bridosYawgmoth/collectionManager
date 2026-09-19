@@ -1,4 +1,6 @@
-import { readFile } from "node:fs/promises";
+import { createReadStream, type Stats } from "node:fs";
+import { open, readFile, stat } from "node:fs/promises";
+import { createInterface } from "node:readline";
 import { z } from "zod";
 import { Card } from "../domain/card.js";
 import { CollectorNumber } from "../domain/collector-number.js";
@@ -78,10 +80,9 @@ const scryfallCardSchema = z.object({
 });
 
 export async function parseOracleCardsFile(path: string): Promise<ParsedOracleCards> {
-  const rows = await readBulkArray(path);
   const cards: Card[] = [];
   let skipped = 0;
-  for (const row of rows) {
+  for await (const row of iterateBulkRows(path)) {
     const card = cardFromUnknown(row);
     if (card === null) {
       skipped += 1;
@@ -96,10 +97,9 @@ export async function parseOracleCardsFile(path: string): Promise<ParsedOracleCa
 }
 
 export async function parseDefaultCardsFile(path: string): Promise<ParsedDefaultCards> {
-  const rows = await readBulkArray(path);
   const printings: Printing[] = [];
   let skipped = 0;
-  for (const row of rows) {
+  for await (const row of iterateBulkRows(path)) {
     const printing = printingFromUnknown(row);
     if (printing === null) {
       skipped += 1;
@@ -113,28 +113,89 @@ export async function parseDefaultCardsFile(path: string): Promise<ParsedDefault
   return { printings, skipped };
 }
 
-async function readBulkArray(path: string): Promise<unknown[]> {
-  let text: string;
+// Stream JSONL line-by-line so default_cards never hits Node's ~512MB string
+// cap; JSON.parse of the whole file throws ERR_STRING_TOO_LONG.
+const MAX_JSON_ARRAY_BYTES = 400 * 1024 * 1024;
+
+async function* iterateBulkRows(path: string): AsyncGenerator {
+  let fileStat: Stats;
   try {
-    text = await readFile(path, "utf8");
+    fileStat = await stat(path);
   } catch (error) {
     throw new BulkParseError(`Bulk file is missing: ${path}`, { cause: error });
   }
+  if (fileStat.size === 0) {
+    throw new EmptyBulkError(`Bulk file is empty: ${path}`);
+  }
 
+  const firstChar = await peekFirstNonWhitespace(path);
+  if (firstChar === "[") {
+    if (fileStat.size > MAX_JSON_ARRAY_BYTES) {
+      throw new BulkParseError(`Bulk JSON array is too large to parse in memory: ${path}`);
+    }
+    yield* iterateJsonArrayFile(path);
+    return;
+  }
+
+  yield* iterateJsonlFile(path);
+}
+
+async function peekFirstNonWhitespace(path: string): Promise<string | undefined> {
+  const handle = await open(path, "r");
+  try {
+    const buffer = Buffer.alloc(64);
+    const result = await handle.read(buffer, 0, buffer.length, 0);
+    const text = buffer.subarray(0, result.bytesRead).toString("utf8").trimStart();
+    return text[0];
+  } finally {
+    await handle.close();
+  }
+}
+
+async function* iterateJsonArrayFile(path: string): AsyncGenerator {
+  const text = await readFile(path, "utf8");
   let parsed: unknown;
   try {
     parsed = JSON.parse(text) as unknown;
   } catch (error) {
     throw new BulkParseError(`Bulk file is not valid JSON: ${path}`, { cause: error });
   }
-
   if (!isJsonArray(parsed)) {
     throw new BulkParseError(`Bulk file is not a JSON array: ${path}`);
   }
   if (parsed.length === 0) {
     throw new EmptyBulkError(`Bulk file is empty: ${path}`);
   }
-  return parsed;
+  for (const row of parsed) {
+    yield row;
+  }
+}
+
+async function* iterateJsonlFile(path: string): AsyncGenerator {
+  const reader = createInterface({
+    input: createReadStream(path),
+    crlfDelay: Infinity,
+  });
+  let sawRow = false;
+  try {
+    for await (const line of reader) {
+      const trimmed = line.trim();
+      if (trimmed === "") {
+        continue;
+      }
+      try {
+        yield JSON.parse(trimmed) as unknown;
+        sawRow = true;
+      } catch (error) {
+        throw new BulkParseError(`Bulk file is not valid JSON: ${path}`, { cause: error });
+      }
+    }
+  } finally {
+    reader.close();
+  }
+  if (!sawRow) {
+    throw new EmptyBulkError(`Bulk file is empty: ${path}`);
+  }
 }
 
 function isJsonArray(value: unknown): value is unknown[] {
