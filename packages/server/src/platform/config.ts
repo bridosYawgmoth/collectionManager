@@ -7,8 +7,15 @@ export interface Config {
   host: string;
 }
 
+// dotenvPath: repo-root .env, four levels up from src/platform.
+// Exported so a test can prove the path, because an off-by-one here
+// boots without DATABASE_URL even when .env exists.
+export function dotenvPath(): string {
+  return resolve(import.meta.dirname, "../../../../.env");
+}
+
 function loadDotEnv(): void {
-  const envPath = resolve(import.meta.dirname, "../../../.env");
+  const envPath = dotenvPath();
   if (!existsSync(envPath)) {
     return;
   }
