@@ -1,0 +1,11 @@
+{
+  "accuracy": 1,
+  "hits": 106,
+  "total": 106,
+  "stages": {
+    "exact": 75,
+    "alias": 8,
+    "phonetic": 19,
+    "trigram": 4
+  }
+}

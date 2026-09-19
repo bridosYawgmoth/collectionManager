@@ -14,7 +14,11 @@ The resolver turns a mangled speech transcript into a specific card. Its accurac
 pnpm --filter server test:resolver-eval
 ```
 
-Reports overall accuracy, per-stage hit counts (normalized exact, alias, phonetic, trigram, LLM tiebreak), and a diff against `packages/server/src/resolution/__fixtures__/baseline.json`.
+Also: `pnpm test:resolver-eval` from the repo root.
+
+Reports overall accuracy, per-stage hit counts (normalized exact, alias, phonetic, trigram), and a diff against `packages/server/src/resolution/__fixtures__/baseline.json`.
+
+LLM tiebreak is out of scope. Trigram is the last local step: a miss or near-tie stays pending confirmation later and must not mutate Collection.
 
 ## Reading the output
 

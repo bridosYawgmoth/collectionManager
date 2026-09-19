@@ -6,10 +6,12 @@
     "dev": "tsx src/platform/server.ts",
     "start": "tsx src/platform/server.ts",
     "test": "vitest run",
+    "test:resolver-eval": "vitest run src/resolution/__fixtures__/resolver-eval.test.ts",
     "typecheck": "tsc --noEmit",
     "scryfall:refresh": "tsx src/catalog/infrastructure/refresh-cli.ts"
   },
   "dependencies": {
+    "double-metaphone": "^2.0.1",
     "fastify": "^5.12.5",
     "postgres": "^3.4.9",
     "zod": "^4.6.5"
