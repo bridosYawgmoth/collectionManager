@@ -7,3 +7,5 @@ Scoring (Double Metaphone, Levenshtein, confidence) stays in TypeScript. `pg_trg
 Cascade, in order: normalized exact → alias table → phonetic (Double Metaphone) → trigram/edit distance. LLM tiebreak is out of scope (cost). The last local step is the last step for now: ambiguous or low-confidence results stay pending confirmation later and must not mutate Collection.
 
 Accuracy is a committed number. Run `pnpm test:resolver-eval` (or `pnpm --filter server test:resolver-eval`). The suite uses a fixture catalog of targets plus distractors, not the 38k production ingest.
+
+`ResolveSpokenName` can inject a `pg_trgm` prefilter after phonetic miss; TypeScript still ranks the subset. Phonetic cases like "ether eyes" are below the SQL similarity threshold on purpose.

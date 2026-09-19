@@ -27,6 +27,16 @@ export class CardResolver {
   constructor(private readonly index: CardNameIndex) {}
 
   match(spoken: string): ResolutionResult {
+    const early = this.matchThroughPhonetic(spoken);
+    if (early !== undefined) {
+      return early;
+    }
+    return this.rankTrigram(spoken, this.index.all());
+  }
+
+  // matchThroughPhonetic: stops before trigram so an application use case can
+  // swap in a SQL pg_trgm candidate set. Undefined means fall through.
+  matchThroughPhonetic(spoken: string): ResolutionResult | undefined {
     const normalized = normalizeCardName(spoken);
     if (normalized === "") {
       return { status: "unresolved", candidates: [] };
@@ -50,12 +60,7 @@ export class CardResolver {
       };
     }
 
-    const phonetic = this.matchPhonetic(normalized);
-    if (phonetic !== undefined) {
-      return phonetic;
-    }
-
-    return this.rankTrigram(normalized, this.index.all());
+    return this.matchPhonetic(normalized);
   }
 
   // rankTrigram: scores a prefiltered candidate set in TypeScript. Buys a
