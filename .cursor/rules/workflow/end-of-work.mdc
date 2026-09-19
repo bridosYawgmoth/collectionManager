@@ -21,7 +21,13 @@ alwaysApply: true
    git checkout 1-production
    git pull origin 1-production
    ```
-3. Stop. **Do not start a new task.**
+3. Delete the remote feature branch. Prefer `gh pr merge ... --delete-branch` when merging; if the PR was already merged without that flag:
+   ```bash
+   git push origin --delete <feature-branch>
+   ```
+   Never delete `1-production`. Never force-push.
+   Remote-branch deletion keeps a public repo free of stale heads; without it, forgotten feature branches accumulate after every merge.
+4. Stop. **Do not start a new task.**
 
 ## Golden rule
 
