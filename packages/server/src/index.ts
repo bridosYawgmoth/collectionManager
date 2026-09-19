@@ -1,3 +1,2 @@
-// Server entry is assembled in later commits (HTTP, migrations).
-// This file exists so the package typechecks as a real workspace member.
-export {};
+export { buildApp } from "./platform/app.js";
+export type { HealthResponse } from "./platform/app.js";
