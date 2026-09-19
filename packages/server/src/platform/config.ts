@@ -5,7 +5,12 @@ export interface Config {
   databaseUrl: string;
   port: number;
   host: string;
+  scryfallUserAgent: string;
+  scryfallDataDir: string;
 }
+
+export const DEFAULT_SCRYFALL_USER_AGENT =
+  "collectionManager/0.1 (https://github.com/bridosYawgmoth/collectionManager)";
 
 // dotenvPath: repo-root .env, four levels up from src/platform.
 // Exported so a test can prove the path, because an off-by-one here
@@ -52,5 +57,7 @@ export function loadConfig(): Config {
     databaseUrl: requiredEnv("DATABASE_URL"),
     port,
     host: optionalEnv("HOST") ?? "127.0.0.1",
+    scryfallUserAgent: optionalEnv("SCRYFALL_USER_AGENT") ?? DEFAULT_SCRYFALL_USER_AGENT,
+    scryfallDataDir: optionalEnv("SCRYFALL_DATA_DIR") ?? resolve(dotenvPath(), "..", "data/scryfall"),
   };
 }

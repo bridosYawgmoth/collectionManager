@@ -6,7 +6,8 @@
     "dev": "tsx src/platform/server.ts",
     "start": "tsx src/platform/server.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "scryfall:refresh": "tsx src/catalog/infrastructure/refresh-cli.ts"
   },
   "dependencies": {
     "fastify": "^5.12.5",
