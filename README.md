@@ -34,9 +34,44 @@ Accuracy is a committed number with a fixture suite of real transcription failur
 
 TypeScript end to end. Fastify and Postgres on the server, React as an installable PWA on the phone. Five bounded contexts with layering applied where it earns its keep. See `.cursor/rules/` for the conventions.
 
+## Setup
+
+Requires Node 22+ and Homebrew `postgresql@18`. There is no docker-compose; the database is the native Homebrew service.
+
+```bash
+brew install postgresql@18
+brew services start postgresql@18
+createdb collection_manager
+createdb collection_manager_test
+```
+
+Copy `.env.example` to `.env` and set `DATABASE_URL` to a passwordless local URL. The format is in a comment so a real connection string never lands on the assignment line:
+
+```
+postgres://YOUR_MAC_USER@localhost:5432/collection_manager
+```
+
+Then:
+
+```bash
+pnpm i
+pnpm test
+pnpm dev
+```
+
+`GET http://127.0.0.1:3000/health` should return `{ "status": "ok", "postgres": "up" }`. Tests use `collection_manager_test`, derived from `DATABASE_URL` if set, otherwise from `$USER` on localhost.
+
+## Scripts
+
+- `pnpm i` — install the workspace
+- `pnpm test` — Vitest in every package (server tests talk to Homebrew Postgres)
+- `pnpm typecheck` — `tsc --noEmit` per package
+- `pnpm lint` — ESLint
+- `pnpm dev` — apply migrations and start Fastify
+
 ## Status
 
-Early. Project conventions and secret controls are in place; the catalog and resolver come next.
+Workspace scaffold is in place: pnpm monorepo (`shared` / `server` / `pwa`), Fastify health endpoint, and the first migration (`pg_trgm`, `fuzzystrmatch`). Catalog ingest and the resolver come next.
 
 ## Credits
 
