@@ -5,4 +5,5 @@ import type { CatalogName } from "./catalog-name.js";
 export interface CardNameIndex {
   findExact(normalized: string): CatalogName | undefined;
   findAlias(normalized: string): CatalogName | undefined;
+  findPhonetic(codes: readonly string[]): readonly CatalogName[];
 }

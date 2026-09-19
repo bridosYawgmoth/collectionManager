@@ -8,6 +8,10 @@ const BOLT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1";
 const AETHERIZE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2";
 const GOYF = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3";
 const FOW = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa4";
+const JOTUN = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa6";
+const AUTHORIZE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa7";
+const BLAST = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa8";
+const CONFIDANT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa9";
 
 function catalog() {
   return new InMemoryCardNameIndex([
@@ -15,6 +19,10 @@ function catalog() {
     catalogNameFrom({ oracleId: OracleId.from(AETHERIZE), name: "Ætherize" }),
     catalogNameFrom({ oracleId: OracleId.from(GOYF), name: "Tarmogoyf" }),
     catalogNameFrom({ oracleId: OracleId.from(FOW), name: "Force of Will" }),
+    catalogNameFrom({ oracleId: OracleId.from(JOTUN), name: "Jötun Grunt" }),
+    catalogNameFrom({ oracleId: OracleId.from(AUTHORIZE), name: "Authorize" }),
+    catalogNameFrom({ oracleId: OracleId.from(BLAST), name: "Lightning Blast" }),
+    catalogNameFrom({ oracleId: OracleId.from(CONFIDANT), name: "Dark Confidant" }),
   ]);
 }
 
@@ -105,6 +113,46 @@ describe("CardResolver", () => {
       return;
     }
     expect(result.winner.card.name).toBe("Bolt");
+    expect(result.winner.stage).toBe("exact");
+  });
+
+  it("resolves a phonetically mangled name to the correct card", () => {
+    const resolver = new CardResolver(catalog());
+
+    const aetherize = resolver.match("ether eyes");
+    expect(aetherize.status).toBe("matched");
+    if (aetherize.status !== "matched") {
+      return;
+    }
+    expect(aetherize.winner.card.name).toBe("Ætherize");
+    expect(aetherize.winner.stage).toBe("phonetic");
+
+    const jotun = resolver.match("yoten grunt");
+    expect(jotun.status).toBe("matched");
+    if (jotun.status !== "matched") {
+      return;
+    }
+    expect(jotun.winner.card.name).toBe("Jötun Grunt");
+    expect(jotun.winner.stage).toBe("phonetic");
+
+    const bob = resolver.match("dark confident");
+    expect(bob.status).toBe("matched");
+    if (bob.status !== "matched") {
+      return;
+    }
+    expect(bob.winner.card.name).toBe("Dark Confidant");
+    expect(bob.winner.stage).toBe("phonetic");
+  });
+
+  it("does not treat a different lightning variant as a phonetic hit for bolt", () => {
+    const resolver = new CardResolver(catalog());
+    const result = resolver.match("lightning bolt");
+
+    expect(result.status).toBe("matched");
+    if (result.status !== "matched") {
+      return;
+    }
+    expect(result.winner.card.name).toBe("Lightning Bolt");
     expect(result.winner.stage).toBe("exact");
   });
 });
