@@ -3,7 +3,8 @@ import type { CatalogName } from "./catalog-name.js";
 import type { CardNameIndex } from "./card-name-index.js";
 import { normalizedNameSimilarity } from "./levenshtein.js";
 import { phoneticCodes } from "./phonetic-code.js";
-import type { RankedCandidate, ResolutionResult } from "./resolution-result.js";
+import type { RankedCandidate, ResolutionResult, ResolutionStage } from "./resolution-result.js";
+import { fuzzyNameScore } from "./trigram.js";
 
 // Unique Double Metaphone hits are high-confidence even when Levenshtein is
 // modest: STT preserves sound, not spelling. Colliding codes are ranked by
@@ -11,6 +12,13 @@ import type { RankedCandidate, ResolutionResult } from "./resolution-result.js";
 const PHONETIC_UNIQUE_SCORE = 0.92;
 const PHONETIC_RANKED_SCORE = 0.85;
 const PHONETIC_GAP = 0.08;
+
+// Trigram is the last local step. Below TRIGRAM_MATCH_MIN, or when the top
+// two scores are within TRIGRAM_GAP, the result stays pending confirmation
+// and must not mutate Collection. LLM tiebreak is out of scope.
+const TRIGRAM_MATCH_MIN = 0.55;
+const TRIGRAM_GAP = 0.08;
+const TRIGRAM_CANDIDATE_LIMIT = 5;
 
 // CardResolver: spoken string → ranked catalog identity. Pure: scoring
 // never touches SQL or a model. Without it, card identity would leak into
@@ -47,7 +55,17 @@ export class CardResolver {
       return phonetic;
     }
 
-    return { status: "unresolved", candidates: [] };
+    return this.rankTrigram(normalized, this.index.all());
+  }
+
+  // rankTrigram: scores a prefiltered candidate set in TypeScript. Buys a
+  // SQL pg_trgm prefilter without letting Postgres decide identity.
+  rankTrigram(spokenOrNormalized: string, candidates: readonly CatalogName[]): ResolutionResult {
+    const normalized = normalizeCardName(spokenOrNormalized);
+    if (normalized === "" || candidates.length === 0) {
+      return { status: "unresolved", candidates: [] };
+    }
+    return this.decideTrigram(normalized, candidates);
   }
 
   private matchPhonetic(normalized: string): ResolutionResult | undefined {
@@ -67,7 +85,7 @@ export class CardResolver {
       };
     }
 
-    const ranked = rankBySimilarity(normalized, hits, "phonetic");
+    const ranked = rankBy(normalized, hits, "phonetic", normalizedNameSimilarity);
     const best = ranked[0];
     const second = ranked[1];
     if (best === undefined) {
@@ -82,17 +100,41 @@ export class CardResolver {
     }
     return { status: "ambiguous", candidates: ranked };
   }
+
+  private decideTrigram(
+    normalized: string,
+    candidates: readonly CatalogName[],
+  ): ResolutionResult {
+    const ranked = rankBy(normalized, candidates, "trigram", fuzzyNameScore).slice(
+      0,
+      TRIGRAM_CANDIDATE_LIMIT,
+    );
+    const best = ranked[0];
+    const second = ranked[1];
+    if (best === undefined || best.score < TRIGRAM_MATCH_MIN) {
+      return { status: "unresolved", candidates: ranked };
+    }
+    if (second !== undefined && best.score - second.score < TRIGRAM_GAP) {
+      return { status: "ambiguous", candidates: ranked };
+    }
+    return {
+      status: "matched",
+      winner: best,
+      alternatives: ranked.slice(1),
+    };
+  }
 }
 
-function rankBySimilarity(
+function rankBy(
   spoken: string,
   cards: readonly CatalogName[],
-  stage: "phonetic",
+  stage: ResolutionStage,
+  score: (spoken: string, catalog: string) => number,
 ): RankedCandidate[] {
   return cards
     .map((card) => ({
       card,
-      score: normalizedNameSimilarity(spoken, card.nameNormalized),
+      score: score(spoken, card.nameNormalized),
       stage,
     }))
     .sort((left, right) => right.score - left.score);

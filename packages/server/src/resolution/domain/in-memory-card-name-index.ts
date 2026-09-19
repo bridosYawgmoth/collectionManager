@@ -6,6 +6,7 @@ import type { CardNameIndex } from "./card-name-index.js";
 import { phoneticCodes } from "./phonetic-code.js";
 
 export class InMemoryCardNameIndex implements CardNameIndex {
+  private readonly cards: readonly CatalogName[];
   private readonly byNormalized = new Map<string, CatalogName>();
   private readonly byAlias = new Map<string, CatalogName>();
   private readonly byPhonetic = new Map<string, CatalogName[]>();
@@ -14,6 +15,7 @@ export class InMemoryCardNameIndex implements CardNameIndex {
     cards: readonly CatalogName[],
     aliases: readonly CardAlias[] = DEFAULT_CARD_ALIASES,
   ) {
+    this.cards = cards;
     for (const card of cards) {
       this.byNormalized.set(card.nameNormalized, card);
       for (const code of phoneticCodes(card.nameNormalized)) {
@@ -56,5 +58,9 @@ export class InMemoryCardNameIndex implements CardNameIndex {
       }
     }
     return matches;
+  }
+
+  all(): readonly CatalogName[] {
+    return this.cards;
   }
 }

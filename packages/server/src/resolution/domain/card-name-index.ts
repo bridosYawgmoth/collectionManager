@@ -6,4 +6,5 @@ export interface CardNameIndex {
   findExact(normalized: string): CatalogName | undefined;
   findAlias(normalized: string): CatalogName | undefined;
   findPhonetic(codes: readonly string[]): readonly CatalogName[];
+  all(): readonly CatalogName[];
 }

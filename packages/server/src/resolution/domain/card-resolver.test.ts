@@ -12,6 +12,8 @@ const JOTUN = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa6";
 const AUTHORIZE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa7";
 const BLAST = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa8";
 const CONFIDANT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa9";
+const LIMDUL = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa10";
+const SWORDS = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa11";
 
 function catalog() {
   return new InMemoryCardNameIndex([
@@ -23,6 +25,8 @@ function catalog() {
     catalogNameFrom({ oracleId: OracleId.from(AUTHORIZE), name: "Authorize" }),
     catalogNameFrom({ oracleId: OracleId.from(BLAST), name: "Lightning Blast" }),
     catalogNameFrom({ oracleId: OracleId.from(CONFIDANT), name: "Dark Confidant" }),
+    catalogNameFrom({ oracleId: OracleId.from(LIMDUL), name: "Lim-Dûl's Vault" }),
+    catalogNameFrom({ oracleId: OracleId.from(SWORDS), name: "Swords to Plowshares" }),
   ]);
 }
 
@@ -64,7 +68,7 @@ describe("CardResolver", () => {
     if (result.status !== "unresolved") {
       return;
     }
-    expect(result.candidates).toEqual([]);
+    expect(result.candidates.every((candidate) => candidate.score < 0.55)).toBe(true);
   });
 
   it("resolves spoken slang through the alias table", () => {
@@ -154,5 +158,53 @@ describe("CardResolver", () => {
     }
     expect(result.winner.card.name).toBe("Lightning Bolt");
     expect(result.winner.stage).toBe("exact");
+  });
+
+  it("ranks a remaining candidate with trigram and edit distance when sound codes miss", () => {
+    const resolver = new CardResolver(catalog());
+
+    const vault = resolver.match("limb duals vault");
+    expect(vault.status).toBe("matched");
+    if (vault.status !== "matched") {
+      return;
+    }
+    expect(vault.winner.card.name).toBe("Lim-Dûl's Vault");
+    expect(vault.winner.stage).toBe("trigram");
+
+    const swords = resolver.match("swords to plough shares");
+    expect(swords.status).toBe("matched");
+    if (swords.status !== "matched") {
+      return;
+    }
+    expect(swords.winner.card.name).toBe("Swords to Plowshares");
+    expect(swords.winner.stage).toBe("trigram");
+  });
+
+  it("treats a low-scoring leftover as unresolved rather than guessing", () => {
+    const resolver = new CardResolver(catalog());
+    const result = resolver.match("xyzzy not a real card");
+
+    expect(result.status).toBe("unresolved");
+  });
+
+  it("returns ambiguous when the top two fuzzy scores are too close", () => {
+    const resolver = new CardResolver(
+      new InMemoryCardNameIndex(
+        [
+          catalogNameFrom({ oracleId: OracleId.from(BOLT), name: "Lightning Bolt" }),
+          catalogNameFrom({ oracleId: OracleId.from(BLAST), name: "Lightning Blast" }),
+        ],
+        [],
+      ),
+    );
+
+    const result = resolver.match("lightning");
+    expect(result.status).toBe("ambiguous");
+    if (result.status !== "ambiguous") {
+      return;
+    }
+    expect(result.candidates.map((candidate) => candidate.card.name)).toEqual(
+      expect.arrayContaining(["Lightning Bolt", "Lightning Blast"]),
+    );
   });
 });
