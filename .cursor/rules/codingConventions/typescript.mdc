@@ -1,0 +1,58 @@
+---
+description: TypeScript conventions for this project
+globs: **/*.ts,**/*.tsx
+alwaysApply: false
+---
+
+# TypeScript conventions
+
+## Options object for 3 or more parameters
+
+When a function has **3 or more parameters**, take a single options object with a declared interface. TypeScript has no named arguments; this is the equivalent guarantee that call sites are readable.
+
+```ts
+// 2 params — positional is fine
+resolver.match(spoken, limit);
+
+// 3 or more — options object required
+interface MatchOptions {
+  spoken: string;
+  limit: number;
+  contextSet?: SetCode;
+  minScore?: number;
+}
+
+resolver.match({
+  spoken: "lightning bolt",
+  limit: 5,
+  contextSet: SetCode.of("BLB"),
+  minScore: 0.7,
+});
+```
+
+If an edit pushes a function from fewer than 3 parameters to 3 or more, convert it and update all call sites in the same change.
+
+## Types
+
+- No `any`. Use `unknown` at boundaries and parse into a known type.
+- Parse external input (HTTP bodies, WebSocket frames, CSV rows, third-party JSON) with Zod. Never cast.
+- No non-null assertions (`!`). Handle the absent case.
+- Explicit return types on exported functions.
+- Prefer `type` for unions and `interface` for object contracts and ports.
+
+## Errors
+
+Never swallow an error.
+
+```ts
+// BAD
+try { await sync(); } catch {}
+
+// GOOD
+try {
+  await sync();
+} catch (error) {
+  logger.error("Archidekt sync failed", { error });
+  throw new SyncFailedError("Could not push collection", { cause: error });
+}
+```

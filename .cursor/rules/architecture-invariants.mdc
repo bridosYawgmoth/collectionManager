@@ -1,0 +1,38 @@
+---
+description: Non-negotiable invariants for the voice-to-collection pipeline
+alwaysApply: true
+---
+
+# Architecture invariants
+
+Violating any of these is a bug, not a style preference.
+
+## 1. The LLM extracts, the resolver identifies
+
+Intent extraction returns the **spoken string** and a quantity. It never returns a canonical card name, a Scryfall ID, or a set code.
+
+```ts
+// BAD - the model invents plausible cards that were never said
+{ card: "Lightning Bolt", scryfallId: "e3285e6b-..." }
+
+// GOOD - the model reports what it heard; identity is resolved locally
+{ action: "add", spoken: "lightning bolt", quantity: 3 }
+```
+
+Card identity is decided **only** by the Resolution context matching against the local Scryfall index. Asking a model to name a card reintroduces hallucination into the one place the system cannot tolerate it.
+
+## 2. Nothing reaches Collection unconfirmed
+
+A resolution below the confidence threshold becomes a pending confirmation on the `VoiceSession`. It does not mutate `Collection`.
+
+## 3. The event log is append-only
+
+`collection_events` rows are never updated or deleted. Corrections are new compensating events. This is what makes undo work.
+
+## 4. No external write outside an explicit sync command
+
+Nothing writes to Archidekt or any other target as a side effect of adding cards. Sync happens only when the user commands it.
+
+## 5. Scryfall ID is the only cross-system key
+
+Every collection entry and every sync row is keyed on `scryfall_id`. Card names are never identity across system boundaries.
