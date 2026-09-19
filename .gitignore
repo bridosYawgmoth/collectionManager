@@ -50,3 +50,9 @@ pnpm-debug.log*
 .idea/
 *.swp
 *~
+
+# Cursor plan files — working notes, not reviewable product. The live plan
+# Cursor opens lives in ~/.cursor/plans/; a local copy may sit here.
+.cursor/plans/
+*.plan.md
+/plan.md
